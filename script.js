@@ -39,60 +39,14 @@ const TG = [33,99,100,0];
 const SAFETY = { fajr: 1, sunrise: 0, dhuhr: 1, asr: 1, maghrib: 1, isha: 1 };
 
 const devTz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch(e) { return "UTC"; } };
-let S = { city:0, lat:42.6629, lng:21.1655, tz:"Europe/Belgrade", label:"Prishtinë", method:"mwl", asr:2, pre:0, sound:1, theme:"", adj:0, notify:{fajr:1,dhuhr:1,asr:1,maghrib:1,isha:1}, done:{}, ts:{n:0,t:33,d:0,total:0}, ezanEnabled: false };
+// asr: 1 = Shafi, 2 = Hanefi (parazgjedhja)
+let S = { city:0, lat:42.6629, lng:21.1655, tz:"Europe/Belgrade", label:"Prishtinë", gps:false, method:"mwl", asr:2, asrV:2, pre:0, sound:1, theme:"", adj:0, notify:{fajr:1,dhuhr:1,asr:1,maghrib:1,isha:1}, done:{}, ts:{n:0,t:33,d:0,total:0}, ezanEnabled:false };
 let FIRST = true;
 try { const raw = localStorage.getItem("nsq"); if (raw) { FIRST = false; Object.assign(S, JSON.parse(raw)); } } catch(e){}
 const save = () => { try { localStorage.setItem("nsq", JSON.stringify(S)); } catch(e){} };
 const okTz = z => { try { new Intl.DateTimeFormat("en", {timeZone: z}); return true; } catch(e) { return false; } };
 if (!okTz(S.tz)) S.tz = devTz();
-
-/* ========================================================
-   RREGULLIMI I SAKTËSISË: Aladhan API me detyrim Hanefi
-   ======================================================== */
-async function fetchAccurateTimes(lat, lng, tz, method) {
-  const methodMap = { mwl: 3, isna: 2, egypt: 5, karachi: 1, umm: 4, turkey: 13 };
-  const m = methodMap[method] || 3;
-  const school = 2; // DETYROJMË HANEFI
-  const date = new Date();
-  const d = `${date.getDate()}-${date.getMonth()+1}-${date.getFullYear()}`;
-  const url = `https://api.aladhan.com/v1/timings/${d}?latitude=${lat}&longitude=${lng}&method=${m}&school=${school}&timezonestring=${tz}`;
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data.code === 200) {
-      return {
-        fajr: data.data.timings.Fajr, sunrise: data.data.timings.Sunrise,
-        dhuhr: data.data.timings.Dhuhr, asr: data.data.timings.Asr,
-        maghrib: data.data.timings.Maghrib, isha: data.data.timings.Isha
-      };
-    }
-  } catch(e) { console.log("Gabim API, përdorim llogaritje lokale."); }
-  return null;
-}
-
-function parseApiTime(timeStr, baseDate) {
-  if (!timeStr) return null;
-  const [h, m] = timeStr.split(":").map(Number);
-  const d = new Date(baseDate);
-  d.setHours(h, m, 0, 0);
-  return d;
-}
-
-let apiTimes = null;
-
-async function updateTimesFromAPI() {
-  if (!S.lat || !S.lng || !S.tz) return;
-  const times = await fetchAccurateTimes(S.lat, S.lng, S.tz, S.method);
-  if (times) {
-    const today = new Date();
-    apiTimes = {
-      fajr: parseApiTime(times.fajr, today), sunrise: parseApiTime(times.sunrise, today),
-      dhuhr: parseApiTime(times.dhuhr, today), asr: parseApiTime(times.asr, today),
-      maghrib: parseApiTime(times.maghrib, today), isha: parseApiTime(times.isha, today)
-    };
-    render();
-  }
-}
+if (S.asrV !== 2) { S.asr = 2; S.asrV = 2; save(); } // një herë: Hanefi si parazgjedhje
 
 /* ========================================================
    LLOGARITJET ASTRONOMIKE LOKALE (Fallback)
@@ -105,18 +59,18 @@ function fmtr(key, opt) { const k=key+S.tz; return FC[k]||(FC[k]=new Intl.DateTi
 function parts(f, dt) { const p=f.formatToParts(dt); return t=>+p.find(x=>x.type==t).value; }
 function ymdOf(dt) { const g=parts(fmtr("d",{year:"numeric",month:"numeric",day:"numeric"}),dt); return [g("year"),g("month"),g("day")]; }
 function tzOff(y,m,d) { const probe=Date.UTC(y,m-1,d,12); const g=parts(fmtr("f",{hourCycle:"h23",year:"numeric",month:"numeric",day:"numeric",hour:"numeric",minute:"numeric",second:"numeric"}),probe); return (Date.UTC(g("year"),g("month")-1,g("day"),g("hour"),g("minute"),g("second"))-probe)/36e5; }
-const fmt = d => isNaN(d)?"–":fmtr("t",{hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(d);
+const fmt = d => (!d||isNaN(d))?"–":fmtr("t",{hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(d);
 const sh = (y,m,d,n) => { const x=new Date(Date.UTC(y,m-1,d+n)); return [x.getUTCFullYear(),x.getUTCMonth()+1,x.getUTCDate()]; };
 const wday = (y,m,d) => new Date(Date.UTC(y,m-1,d)).getUTCDay();
 
 function times(y,m,d) {
-  const tz=tzOff(y,m,d), jd=jul(y,m,d,12)-S.lng/360, M=METHODS[S.method]||METHODS.mwl;
+  const tz=tzOff(y,m,d), jd=jul(y,m,d,12)-S.lng/360, M=METHODS[S.method]||METHODS.mwl, af=(+S.asr===2)?2:1;
   const core = lat => {
     const sp=t=>sunPos(jd+t/24), mid=t=>fixH(12-sp(t).eqt);
     const ang=(a,t,ccw)=>{const s=sp(t),cosH=(-sin(a)-sin(s.decl)*sin(lat))/(cos(s.decl)*cos(lat)); if(cosH<-1||cosH>1)return NaN; const v=Math.acos(cosH)*D/15; return mid(t)+(ccw?-v:v);};
-    const asr=(f,t)=>{const s=sp(t),alt=-Math.atan(1/(2+Math.tan(Math.abs(lat-s.decl)*R)))*D; return ang(alt,t);};
+    const asr=(f,t)=>{const s=sp(t),alt=-Math.atan(1/(f+Math.tan(Math.abs(lat-s.decl)*R)))*D; return ang(alt,t);};
     let t={fajr:5,sunrise:6,dhuhr:12,asr:13,maghrib:18,isha:18};
-    for(let i=0;i<3;i++){t={fajr:ang(M[1],t.fajr,1),sunrise:ang(.833,t.sunrise,1),dhuhr:mid(t.dhuhr),asr:asr(2,t.asr),maghrib:ang(.833,t.maghrib),isha:M[3]?t.maghrib+M[3]/60:ang(M[2],t.isha)};}
+    for(let i=0;i<3;i++){t={fajr:ang(M[1],t.fajr,1),sunrise:ang(.833,t.sunrise,1),dhuhr:mid(t.dhuhr),asr:asr(af,t.asr),maghrib:ang(.833,t.maghrib),isha:M[3]?t.maghrib+M[3]/60:ang(M[2],t.isha)};}
     return t;
   };
   let t=core(S.lat); if(Object.values(t).some(isNaN)){const t2=core(48.6); for(const k in t) if(isNaN(t[k])) t[k]=t2[k];}
@@ -125,6 +79,63 @@ function times(y,m,d) {
   return o;
 }
 
+/* ========================================================
+   KOHËT E SAKTA NGA ALADHAN API (dita + kalendari mujor)
+   ======================================================== */
+const METHOD_MAP = { mwl: 3, isna: 2, egypt: 5, karachi: 1, umm: 4, turkey: 13 };
+const apiC = {}, apiPend = {}, apiTried = {};
+let lastToastCfg = "";
+const cfgK = () => S.lat+"|"+S.lng+"|"+S.method+"|"+S.asr+"|"+S.tz;
+const dayK = (y,m,d) => y+"-"+m+"-"+d+"|"+cfgK();
+const validT = v => /\d{1,2}:\d{2}/.test(v || "");
+
+// Ora e qytetit (S.tz) -> çast i saktë kohor (+ rregullimi manual)
+function parseApiTime(str, y, m, d) {
+  const mt = /(\d{1,2}):(\d{2})/.exec(str || "");
+  if (!mt) return null;
+  return new Date(Date.UTC(y, m-1, d, +mt[1], +mt[2]) - tzOff(y, m, d) * 36e5 + (S.adj || 0) * 60000);
+}
+
+async function loadMonth(y, m) {
+  const cfg = cfgK(), key = "M"+y+"-"+m+"|"+cfg;
+  if (apiPend[key] || (apiTried[key] && Date.now() - apiTried[key] < 60000)) return;
+  apiPend[key] = 1; apiTried[key] = Date.now();
+  const mm = METHOD_MAP[S.method] || 3, school = (+S.asr === 2) ? 1 : 0; // Aladhan: 0 = Shafi, 1 = Hanefi
+  const url = `https://api.aladhan.com/v1/calendar/${y}/${m}?latitude=${S.lat}&longitude=${S.lng}&method=${mm}&school=${school}&timezonestring=${encodeURIComponent(S.tz)}`;
+  let ok = false;
+  try {
+    const res = await fetch(url), j = await res.json();
+    if (j.code === 200 && Array.isArray(j.data)) {
+      j.data.forEach(x => {
+        const t = x.timings, g = x.date && x.date.gregorian;
+        if (!t || !g) return;
+        const o = { fajr:t.Fajr, sunrise:t.Sunrise, dhuhr:t.Dhuhr, asr:t.Asr, maghrib:t.Maghrib, isha:t.Isha };
+        if (Object.values(o).every(validT)) apiC[y+"-"+m+"-"+(+g.day)+"|"+cfg] = o;
+      });
+      ok = true;
+    }
+  } catch(e) { console.log("Gabim API, përdorim llogaritje lokale."); }
+  delete apiPend[key];
+  if (ok && cfgK() === cfg) {
+    if (y === Y && m === Mo && lastToastCfg !== cfg) { lastToastCfg = cfg; toast("Kohët u sinkronizuan me saktësi maksimale."); }
+    render();
+  }
+}
+
+// Kohët e një dite: nga API nëse janë ngarkuar, përndryshe llogaritje lokale (dhe kërkohet API)
+function dayTimes(y, m, d) {
+  const raw = apiC[dayK(y,m,d)];
+  if (raw) {
+    const o = {};
+    for (const k in raw) o[k] = parseApiTime(raw[k], y, m, d);
+    return o;
+  }
+  loadMonth(y, m);
+  return times(y, m, d);
+}
+
+function updateTimesFromAPI() { for (const k in apiTried) delete apiTried[k]; render(); }
+
 const nm = k => NAMES.find(n => n[0] == k)[1];
 function hjParts(y,m,d) { try { const g=parts(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura",{timeZone:"UTC",day:"numeric",month:"numeric",year:"numeric"}),Date.UTC(y,m-1,d,12)); return [g("day"),g("month"),g("year")]; } catch(e){return null;} }
 
@@ -132,16 +143,10 @@ let Y,Mo,Dd,T0,TY,TT,EV,DK,fired={},mo=null;
 
 function render() {
   [Y,Mo,Dd]=ymdOf(new Date()); DK=Y+"-"+Mo+"-"+Dd;
-  
-  if (apiTimes) {
-    T0 = apiTimes;
-    TY = times(...sh(Y,Mo,Dd,-1)); 
-    TT = times(...sh(Y,Mo,Dd,1));
-  } else {
-    T0 = times(Y,Mo,Dd); 
-    TY = times(...sh(Y,Mo,Dd,-1)); 
-    TT = times(...sh(Y,Mo,Dd,1));
-  }
+
+  T0 = dayTimes(Y,Mo,Dd);
+  TY = dayTimes(...sh(Y,Mo,Dd,-1));
+  TT = dayTimes(...sh(Y,Mo,Dd,1));
 
   EV=[{k:"isha",t:TY.isha},...NAMES.map(x=>({k:x[0],t:T0[x[0]]})),{k:"fajr",t:TT.fajr}];
   if(!mo)mo={y:Y,m:Mo};
@@ -200,6 +205,16 @@ function stopEzan() {
   if (btnHero) btnHero.style.display = "none";
 }
 
+function notify(title, body, tag) {
+  try {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    const opt = { body, tag, icon: "./assets/logo/icon-192.png", vibrate: [200,100,200] };
+    if (navigator.serviceWorker && navigator.serviceWorker.controller)
+      navigator.serviceWorker.ready.then(r => r.showNotification(title, opt));
+    else new Notification(title, opt);
+  } catch(e) {}
+}
+
 function alertUser(k){
   const body = S.pre>0 ? nm(k)+" fillon pas "+S.pre+" min ("+fmt(T0[k])+")" : "Hyri koha: "+nm(k)+" ("+fmt(T0[k])+")";
   toast(body); 
@@ -209,9 +224,10 @@ function alertUser(k){
   if (S.ezanEnabled) {
     const btnHero = $("#stopEzanHero");
     if (btnHero) btnHero.style.display = "none";
+    ezanAudio.currentTime = 0;
     ezanAudio.play().then(() => {
       if (btnHero) btnHero.style.display = "inline-block";
-    }).catch(e => console.log("Ezan nuk u luajt: ", e));
+    }).catch(e => { console.log("Ezan nuk u luajt: ", e); beep(); });
   } else {
     beep();
   }
@@ -223,7 +239,7 @@ ezanAudio.onended = () => {
 };
 
 let AC;
-function beep(){if(!S.sound)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();[0,.45,.9].forEach((o,i)=>{const x=AC.createOscillator(),g=AC.createGain();x.frequency.value=[523,659,784][i];g.gain.setValueAtTime(.0001,AC.currentTime+o);g.gain.exponentialRampToValueAtTime(.25,AC.currentTime+o+.05);g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+o+.9);x.connect(g).connect(AC.destination);x.start(AC.currentTime+o);x.stop(AC.currentTime+o+1);});}catch(e){}}
+function beep(){if(!S.sound)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume();[0,.45,.9].forEach((o,i)=>{const x=AC.createOscillator(),g=AC.createGain();x.frequency.value=[523,659,784][i];g.gain.setValueAtTime(.0001,AC.currentTime+o);g.gain.exponentialRampToValueAtTime(.25,AC.currentTime+o+.05);g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+o+.9);x.connect(g).connect(AC.destination);x.start(AC.currentTime+o);x.stop(AC.currentTime+o+1);});}catch(e){}}
 let ttTimer;
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(ttTimer);ttTimer=setTimeout(()=>t.classList.remove("on"),6000);}
 function askPerm(){if(!("Notification"in window)){toast("Njoftimet nuk mbështeten.");return Promise.resolve(false);} if(Notification.permission=="granted")return Promise.resolve(true); return Notification.requestPermission().then(p=>p=="granted").catch(()=>false);}
@@ -232,14 +248,14 @@ function cal() {
   $("#mt").textContent=MON[mo.m-1]+" "+mo.y;
   const days=new Date(Date.UTC(mo.y,mo.m,0)).getUTCDate();
   let h="<tr><th>Dita</th>"+NAMES.map(n=>"<th>"+n[1]+"</th>").join("")+"</tr>";
-  for(let d=1;d<=days;d++){const t=times(mo.y,mo.m,d); h+=`<tr class="${mo.y+"-"+mo.m+"-"+d==DK?"today":""}"><td>${d} ${DAY[wday(mo.y,mo.m,d)].slice(2,5)}</td>`+NAMES.map(n=>"<td>"+fmt(t[n[0]])+"</td>").join("")+"</tr>";}
+  for(let d=1;d<=days;d++){const t=dayTimes(mo.y,mo.m,d); h+=`<tr class="${mo.y+"-"+mo.m+"-"+d==DK?"today":""}"><td>${d} ${DAY[wday(mo.y,mo.m,d)].slice(2,5)}</td>`+NAMES.map(n=>"<td>"+fmt(t[n[0]])+"</td>").join("")+"</tr>";}
   $("#tb").innerHTML=h;
 }
 
 /* ========================================================
-   RREGULLIMI I BOSULLËS (KIBLA)
+   BOSULLA (KIBLA)
    ======================================================== */
-let head=null,QB=0;
+let head=null,QB=0,gotAbs=false;
 
 function qibla() {
   const f1=S.lat*R, f2=KAABA[0]*R, dl=(KAABA[1]-S.lng)*R;
@@ -253,8 +269,7 @@ function qibla() {
 
 function drawQ() {
   $("#dial").style.transform = "rotate(" + (head == null ? 0 : -head) + "deg)";
-  let diff = Math.abs(((QB - head + 540) % 360) - 180);
-  const ok = head != null && diff < 5;
+  const ok = head != null && Math.abs(((QB - head + 540) % 360) - 180) < 5;
   $("#cmp").classList.toggle("ok", ok);
   $("#qs").textContent = head == null ? "Busulla nuk është aktive." : (ok ? "Je në drejtim të Kibles." : "Kthe telefonin derisa shigjeta të jetë lart.");
 }
@@ -262,37 +277,25 @@ function drawQ() {
 function onOri(e) {
   let h = null;
   if (e.webkitCompassHeading != null) h = e.webkitCompassHeading;
-  else if (e.alpha != null) h = e.absolute ? e.alpha : (360 - e.alpha);
+  else if (e.type === "deviceorientationabsolute" && e.alpha != null) { gotAbs = true; h = 360 - e.alpha; }
+  else if (e.alpha != null && !gotAbs) h = e.absolute ? 360 - e.alpha : null;
   if (h == null) return;
-  head = h;
+  head = fixA(h);
   drawQ();
 }
 
 function startCompass() {
-  const go = () => {
-    if (window.DeviceOrientationEvent) {
-      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission()
-          .then(permissionState => {
-            if (permissionState === 'granted') {
-              window.addEventListener("deviceorientationabsolute", onOri, true);
-              window.addEventListener("deviceorientation", onOri, true);
-              toast("Busulla u aktivizua.");
-            } else {
-              toast("Leja për busullën u refuzua.");
-            }
-          })
-          .catch(console.error);
-      } else {
-        window.addEventListener("deviceorientationabsolute", onOri, true);
-        window.addEventListener("deviceorientation", onOri, true);
-        toast("Busulla u aktivizua.");
-      }
-    } else {
-      toast("Pajisja nuk ka busull.");
-    }
+  const on = () => {
+    window.addEventListener("deviceorientationabsolute", onOri, true);
+    window.addEventListener("deviceorientation", onOri, true);
+    toast("Busulla u aktivizua.");
   };
-  go();
+  if (!window.DeviceOrientationEvent) return toast("Pajisja nuk ka busull.");
+  if (typeof DeviceOrientationEvent.requestPermission === "function") {
+    DeviceOrientationEvent.requestPermission()
+      .then(st => st === "granted" ? on() : toast("Leja për busullën u refuzua."))
+      .catch(() => toast("Busulla nuk u aktivizua."));
+  } else on();
 }
 
 (()=>{
@@ -334,11 +337,8 @@ function fillSettings() {
     }
   }
 
-  const notifSwitch = $("#notifSwitch");
-  if(notifSwitch) {
-    const anyOn = Object.values(S.notify).some(v => v === 1);
-    notifSwitch.checked = anyOn;
-  }
+  const ns = $("#notifSwitch");
+  if(ns) ns.checked = Object.values(S.notify).some(v => v === 1) && ("Notification" in window) && Notification.permission === "granted";
 }
 
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
@@ -358,13 +358,30 @@ $("#tap").onclick = tap;
 $("#trs").onclick = () => { S.ts.n=0; save(); tsb(); };
 $("#dh").onclick = e => { const b=e.target.closest("[data-d]"); if(b){S.ts.d=+b.dataset.d; S.ts.n=0; save(); tsb();} };
 $("#tg").onclick = e => { const b=e.target.closest("[data-g]"); if(b){S.ts.t=+b.dataset.g; S.ts.n=0; save(); tsb();} };
-$("#sc").onchange = e => { if(e.target.value=="custom")return; const c=CITIES[+e.target.value]; S.city=+e.target.value; S.lat=c[1]; S.lng=c[2]; S.tz=c[3]; S.label=c[0]; fired={}; mo=null; save(); fillSettings(); updateTimesFromAPI(); render(); };
-$("#sco").onchange = async e => { CC=e.target.value; $("#res").innerHTML=""; if(!CC)return; let cap=(RESC.find(x=>x[0]==CC)||[0,CC])[1]; try{const r=await fetch("https://restcountries.com/v3.1/alpha/"+CC+"?fields=capital"),j=await r.json(),o=Array.isArray(j)?j[0]:j; if(o&&o.capital&&o.capital[0])cap=o.capital[0];}catch(x){} try{ const r = await fetch("https://geocoding-api.open-meteo.com/v1/search?count=10&format=json&language=sq&name="+encodeURIComponent(cap)+"&countryCode="+CC); RES=(await r.json()).results||[]; $("#res").innerHTML=RES.map((c,i)=>`<button class="rs" data-i="${i}">${esc(c.name)}<span>${esc([c.admin1,c.country].filter(Boolean).join(", "))}</span></button>`).join(""); }catch(x){toast("Kërkimi kërkon internet.");} };
-$("#q").oninput = () => { clearTimeout(qt); const v=$("#q").value.trim(); if(v.length<2){$("#res").innerHTML="";return;} qt=setTimeout(async()=>{ try{ const r=await fetch("https://geocoding-api.open-meteo.com/v1/search?count=10&format=json&language=sq&name="+encodeURIComponent(v)+(CC?"&countryCode="+CC:"")); RES=(await r.json()).results||[]; $("#res").innerHTML=RES.map((c,i)=>`<button class="rs" data-i="${i}">${esc(c.name)}<span>${esc([c.admin1,c.country].filter(Boolean).join(", "))}</span></button>`).join(""); }catch(x){toast("Kërkimi kërkon internet.");} },350); };
+$("#sc").onchange = e => { if(e.target.value=="custom")return; const c=CITIES[+e.target.value]; S.city=+e.target.value; S.lat=c[1]; S.lng=c[2]; S.tz=c[3]; S.label=c[0]; S.gps=false; fired={}; mo=null; save(); fillSettings(); updateTimesFromAPI(); };
+
+const showRes = () => { $("#res").innerHTML=RES.map((c,i)=>`<button class="rs" data-i="${i}">${esc(c.name)}<span>${esc([c.admin1,c.country].filter(Boolean).join(", "))}</span></button>`).join(""); };
+$("#sco").onchange = async e => {
+  CC=e.target.value; $("#res").innerHTML=""; if(!CC)return;
+  let cap=(RESC.find(x=>x[0]==CC)||[0,CC])[1];
+  try{const r=await fetch("https://restcountries.com/v3.1/alpha/"+CC+"?fields=capital"),j=await r.json(),o=Array.isArray(j)?j[0]:j; if(o&&o.capital&&o.capital[0])cap=o.capital[0];}catch(x){}
+  try{ const r=await fetch("https://geocoding-api.open-meteo.com/v1/search?count=10&format=json&language=sq&name="+encodeURIComponent(cap)+"&countryCode="+CC); RES=(await r.json()).results||[]; showRes(); }catch(x){toast("Kërkimi kërkon internet.");}
+};
 let qt;
-$("#res").onclick = e => { const b=e.target.closest("[data-i]"); if(b&&RES[+b.dataset.i]){ const c=RES[+b.dataset.i]; S.city="custom"; S.lat=c.latitude; S.lng=c.longitude; S.tz=c.timezone; S.label=c.name; fired={}; mo=null; save(); fillSettings(); updateTimesFromAPI(); render(); $("#res").innerHTML=""; toast("Vendndodhja: "+c.name); } };
-$("#sm").onchange = e => { S.method=e.target.value; save(); updateTimesFromAPI(); render(); };
-$("#sa").onchange = e => { S.asr=+e.target.value; save(); updateTimesFromAPI(); render(); };
+$("#q").oninput = () => {
+  clearTimeout(qt); const v=$("#q").value.trim(); if(v.length<2){$("#res").innerHTML="";return;}
+  qt=setTimeout(async()=>{ try{ const r=await fetch("https://geocoding-api.open-meteo.com/v1/search?count=10&format=json&language=sq&name="+encodeURIComponent(v)+(CC?"&countryCode="+CC:"")); RES=(await r.json()).results||[]; showRes(); }catch(x){toast("Kërkimi kërkon internet.");} },350);
+};
+$("#res").onclick = e => {
+  const b=e.target.closest("[data-i]");
+  if(b&&RES[+b.dataset.i]){
+    const c=RES[+b.dataset.i];
+    S.city="custom"; S.lat=c.latitude; S.lng=c.longitude; S.tz=okTz(c.timezone)?c.timezone:devTz(); S.label=c.name; S.gps=false;
+    fired={}; mo=null; save(); fillSettings(); updateTimesFromAPI(); $("#res").innerHTML=""; toast("Vendndodhja: "+c.name);
+  }
+};
+$("#sm").onchange = e => { S.method=e.target.value; save(); updateTimesFromAPI(); };
+$("#sa").onchange = e => { S.asr=+e.target.value; save(); updateTimesFromAPI(); };
 $("#sp").onchange = e => { S.pre=+e.target.value; save(); };
 $("#ss").onchange = e => { S.sound=+e.target.value; save(); beep(); };
 $("#st").onchange = e => { S.theme=e.target.value; save(); theme(); };
@@ -372,16 +389,11 @@ if($("#sadj"))$("#sadj").onchange = e => { S.adj=+e.target.value; save(); render
 
 const notifSwitch = $("#notifSwitch");
 if(notifSwitch) {
-  notifSwitch.onchange = async (e) => {
+  notifSwitch.onchange = async e => {
     if(e.target.checked) {
       const ok = await askPerm();
-      if(ok) {
-        for (const k of FIVE) S.notify[k] = 1;
-        toast("Njoftimet u aktivizuan!");
-      } else {
-        e.target.checked = false;
-        toast("Duhet të lejoni njoftimet në shfletues.");
-      }
+      if(ok) { for (const k of FIVE) S.notify[k] = 1; toast("Njoftimet u aktivizuan!"); }
+      else { e.target.checked = false; toast("Duhet të lejoni njoftimet në shfletues."); }
     } else {
       for (const k of FIVE) S.notify[k] = 0;
       toast("Njoftimet u çaktivizuan.");
@@ -393,85 +405,50 @@ if(notifSwitch) {
 $("#test").onclick = () => { askPerm().then(()=>{const b="Ky është një njoftim prove."; toast(b); beep(); notify("NamaziShqip",b,"nsq-test");}); };
 
 /* ========================================================
-   FUNKSIONET E LOKACIONIT (Rregulluar për Safari/iOS)
+   LOKACIONI (GPS + qyteti me reverse geocoding)
    ======================================================== */
-async function updateLocation() {
+function updateLocation() {
   if(!navigator.geolocation) return toast("GPS nuk mbështetet në këtë pajisje.");
-  
   navigator.geolocation.getCurrentPosition(
     async p => {
-      S.city = "custom";
-      S.lat = p.coords.latitude;
-      S.lng = p.coords.longitude;
-      S.tz = devTz();
-      S.label = "Vendndodhja ime";
+      S.city = "custom"; S.gps = true;
+      S.lat = p.coords.latitude; S.lng = p.coords.longitude;
+      S.tz = devTz(); S.label = "Vendndodhja ime";
       fired = {}; mo = null;
-      
-      // Përditësojmë pamjen me të dhënat fillestare
-      save(); fillSettings(); updateTimesFromAPI(); render();
-      
-      const row = $("#locPermissionRow");
-      if (row) row.style.display = "none";
+      save(); fillSettings(); updateTimesFromAPI();
+      const row = $("#locPermissionRow"); if (row) row.style.display = "none";
 
-      // KËRKOJMË REVERSE GEOCODING PËR TË MARRË QYTETIN DHE SHTETIN
       try {
         const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${S.lat}&longitude=${S.lng}&localityLanguage=sq`);
         const data = await res.json();
-        
-        // Nëse API kthen një qytet, e përdorim atë
         const cityName = data.city || data.locality || data.principalSubdivision;
-        const countryCode = data.countryCode; // p.sh. XK, RS, AL
-        
-        if (cityName) {
-          S.label = cityName;
-          $("#q").value = cityName; // Shfaq qytetin te "Kërko qytetin"
-        }
-        
-        if (countryCode) {
-          CC = countryCode;
-          $("#sco").value = CC; // Shfaq shtetin te "Shteti"
-        }
-        
-        save(); fillSettings(); updateTimesFromAPI(); render();
+        if (cityName) { S.label = cityName; $("#q").value = cityName; }
+        if (data.countryCode) { CC = data.countryCode; }
+        save(); fillSettings(); render();
         toast("Vendndodhja u përditësua: " + S.label);
       } catch (e) {
-        console.log("Gabim gjatë marrjes së qytetit:", e);
         toast("Vendndodhja u përditësua.");
       }
     },
-    err => {
-      toast("Nuk u mor vendndodhja. Lejo lokacionin te cilësimet e telefonit.");
-      console.log(err);
-    },
+    err => { toast("Nuk u mor vendndodhja. Lejo lokacionin te cilësimet e telefonit."); console.log(err); },
     { timeout: 10000, enableHighAccuracy: true }
   );
 }
-
 $("#geo").onclick = updateLocation;
+if ($("#requestLocPerm")) $("#requestLocPerm").onclick = updateLocation;
 
-if ($("#requestLocPerm")) {
-  $("#requestLocPerm").onclick = () => {
-    updateLocation();
-  };
-}
-
-// Kontrollo statusin e lejes për lokacion (pa e detyruar)
-if (navigator.permissions) {
-  navigator.permissions.query({ name: 'geolocation' }).then(result => {
+// GPS automatik vetëm nëse përdoruesi e ka zgjedhur GPS-in (ose hapja e parë), që të mos mbishkruhet qyteti i zgjedhur me dorë
+if (navigator.permissions && navigator.permissions.query) {
+  navigator.permissions.query({ name: "geolocation" }).then(r => {
     const row = $("#locPermissionRow");
-    if (result.state === 'granted') {
-      if (row) row.style.display = "none";
-      updateLocation();
-    } else {
-      if (row) row.style.display = "flex";
-    }
-  }).catch(() => {
-    if ($("#locPermissionRow")) $("#locPermissionRow").style.display = "flex";
-  });
-} else {
-  if ($("#locPermissionRow")) $("#locPermissionRow").style.display = "flex";
+    if (row) row.style.display = r.state === "granted" ? "none" : "flex";
+    if (r.state === "granted" && (S.gps || FIRST)) updateLocation();
+  }).catch(() => {});
 }
 
+/* ========================================================
+   EZANI (butoni)
+   ======================================================== */
 $("#ezanBtn").onclick = () => {
   if (!S.ezanEnabled) {
     ezanAudio.volume = 1;
@@ -494,16 +471,32 @@ $("#ezanBtn").onclick = () => {
     toast("Ezani u çaktivizua.");
   }
 };
+if ($("#stopEzanHero")) $("#stopEzanHero").onclick = stopEzan;
 
-if ($("#stopEzanHero")) {
-  $("#stopEzanHero").onclick = stopEzan;
-}
-
+/* ========================================================
+   INSTALIMI, SERVICE WORKER, EVENTE TË PËRBASHKËTA
+   ======================================================== */
 let DP;
 addEventListener("beforeinstallprompt", e => { e.preventDefault(); DP=e; if($("#inst"))$("#inst").hidden=false; });
 addEventListener("appinstalled", () => { if($("#inst"))$("#inst").hidden=true; toast("Aplikacioni u instalua"); });
 if($("#inst"))$("#inst").onclick = () => { if(!DP)return; DP.prompt(); DP.userChoice.finally(()=>{ DP=null; $("#inst").hidden=true; }); };
 if("serviceWorker" in navigator && /^https?:\//.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(()=>{});
+
+// Kontrollo njoftimin kur hapet aplikacioni pas gjumit / kur kthehet interneti
+document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
+addEventListener("online", () => { for (const k in apiTried) delete apiTried[k]; render(); });
+
+// Zhblloko audion me prekjen e parë pas çdo hapjeje
+const unlockAudio = () => {
+  try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); } catch(e) {}
+  if (S.ezanEnabled) {
+    ezanAudio.muted = true;
+    ezanAudio.play().then(() => { ezanAudio.pause(); ezanAudio.currentTime = 0; ezanAudio.muted = false; })
+      .catch(() => { ezanAudio.muted = false; });
+  }
+  removeEventListener("pointerdown", unlockAudio, true);
+};
+addEventListener("pointerdown", unlockAudio, true);
 
 // Ekzekutimi fillestar
 theme(); 
@@ -511,8 +504,3 @@ fillSettings();
 tsb(); 
 render(); 
 setInterval(tick, 1000);
-
-// Nëse ekziston lokacioni, përditëso kohët me API
-if (S.lat && S.lng) {
-  updateTimesFromAPI();
-}
