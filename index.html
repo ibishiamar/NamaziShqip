@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NamaziShqip – Kohët e namazit</title>
+<meta name="theme-color" content="#0a3a2a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="NamaziShqip">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="./assets/logo/icon-192.png">
+<link rel="apple-touch-icon" href="./assets/logo/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Figtree:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+<header>
+ <div class="logo"><img src="./assets/logo/icon-192.png" alt="" width="34" height="34">NamaziShqip</div>
+ <div class="header-actions">
+  <button class="loc" id="locBtn" aria-label="Ndrysho vendndodhjen">📍 Prishtinë</button>
+  <button class="btn-install" id="inst" hidden>⬇ Instalo</button>
+ </div>
+</header>
+
+<div class="page-title-wrap">
+  <div class="page-title">
+    <p class="kicker">📍 KOSOVË, PRISHTINË</p>
+    <h1>Kohët e namazit</h1>
+  </div>
+  <div class="page-date">
+    <b id="dt">E hënë, 26 Tetor 2026</b>
+    <p class="mut" id="hj">15 Xhumadel-ula 1448 H.</p>
+  </div>
+</div>
+
+<main class="main-grid">
+
+<!-- VIEW 0: SOT -->
+<section class="view on" id="v0">
+ <div class="hero" id="hero">
+  <div class="hc">
+   <p class="kicker-white">NAMAZI I RADHËS</p>
+   <h2 class="hero-title"><span class="moon">☾</span> <span id="nxN">Jacia</span></h2>
+   
+   <div class="ringbox"><svg viewBox="0 0 236 236"><circle class="bg" cx="118" cy="118" r="102"/><circle class="fg" id="ring" cx="118" cy="118" r="102"/></svg>
+    <div class="ringin">
+      <small>KOHA E MBETUR</small>
+      <div class="cd" id="cd">00:00:00</div>
+      <small id="nxT">në orën 18:03</small>
+    </div>
+   </div>
+   
+   <!-- Butoni i Ndalimit të Ezanit -->
+   <div class="cen" style="margin-top: 20px; position: relative; z-index: 10;">
+     <button class="btn" id="stopEzanHero" style="display: none; background: #ef4444; color: #fff !important; border-radius: 30px; padding: 12px 30px; font-size: 16px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); border: none;">⏹ Ndal Ezanin</button>
+   </div>
+
+   <div class="rmz" id="rmz" hidden></div>
+  </div>
+ </div>
+ 
+ <div class="side-col">
+   <div id="list" class="list"></div>
+   <div class="card prog" id="prog"></div>
+   
+   <!-- Karta e Ajetit të Ditës (E RE) -->
+   <div class="card" style="text-align: center; background: var(--hl); border-color: var(--pri);">
+     <p class="mut" style="color: var(--pri); font-weight: 700; margin-bottom: 10px; letter-spacing: 1px;">AJETI I DITËS</p>
+     <p style="font-family: 'Amiri', serif; font-size: 26px; line-height: 1.8; direction: rtl;">إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا</p>
+     <p class="mut" style="margin-top: 12px; font-style: italic;">"Vërtet, namazi është detyrë e obligueshme për besimtarët në kohë të caktuara." (En-Nisa: 103)</p>
+   </div>
+ </div>
+</section>
+
+<!-- VIEW 1: TAKVIMI -->
+<section class="view" id="v1">
+ <h2>Takvimi mujor</h2>
+ <div class="mnav"><button id="pm" aria-label="Muaji paraprak">‹</button><b id="mt"></b><button id="nm" aria-label="Muaji tjetër">›</button></div>
+ <div class="tw"><table id="tb"></table></div>
+</section>
+
+<!-- VIEW 2: KIBLA -->
+<section class="view" id="v2">
+ <h2>Drejtimi i Kibles</h2>
+ <p class="mut" id="qi"></p>
+ <div class="cmp" id="cmp">
+  <div id="dial"><svg viewBox="0 0 200 200">
+   <circle class="r" cx="100" cy="100" r="92" fill="var(--card)" stroke="var(--line)" stroke-width="3"/>
+   <g id="ticks" stroke="var(--mut)" stroke-width="1.5"></g>
+   <g font-family="Figtree" font-weight="700" font-size="13" text-anchor="middle" fill="var(--tx)"><text x="100" y="34">V</text><text x="171" y="105">L</text><text x="100" y="176">J</text><text x="29" y="105">P</text></g>
+   <g id="qg"><line x1="100" y1="100" x2="100" y2="40" stroke="var(--gold)" stroke-width="3" stroke-linecap="round"/><rect x="90" y="8" width="20" height="22" rx="2" fill="#111"/><rect x="90" y="13" width="20" height="4" fill="#d4a93c"/></g>
+   <circle cx="100" cy="100" r="5" fill="var(--pri)"/>
+  </svg></div>
+ </div>
+ <div class="big" id="qd">–</div>
+ <p class="mut cen" id="qs"></p>
+ <div class="cen top14"><button class="btn" id="cpBtn">Aktivizo busullën</button></div>
+</section>
+
+<!-- VIEW 3: TASBIHU -->
+<section class="view" id="v3">
+ <h2>Tasbihu</h2>
+ <div class="chips" id="dh"></div>
+ <div class="ar" id="ar"></div>
+ <div class="tsb">
+  <svg viewBox="0 0 220 220"><circle class="bg" cx="110" cy="110" r="96"/><circle class="fg" id="tr" cx="110" cy="110" r="96"/></svg>
+  <button id="tap" aria-label="Numëro"><b id="tc">0</b><small id="tt"></small></button>
+ </div>
+ <div class="chips" id="tg"></div>
+ <div class="cen"><button class="btn sec" id="trs">Rifillo numërimin</button></div>
+ <p class="mut cen top10" id="tot"></p>
+</section>
+
+<!-- VIEW 4: CILËSIMET -->
+<section class="view" id="v4">
+ <h2>Cilësimet</h2>
+ <div class="settings-grid">
+   <div class="card">
+    <p class="mut">Vendndodhja</p>
+    <div class="fld"><span>Gjej vendin tim</span><button class="btn sec" id="geo">Përdor GPS</button></div>
+    <div class="fld"><span>Shteti</span><select id="sco"></select></div>
+    <div class="fld"><span>Kërko qytetin</span><input id="q" type="search" placeholder="p.sh. Stamboll" autocomplete="off"></div>
+    <div id="res" class="res"></div>
+    <div class="fld"><span>Qytetet e shpejta</span><select id="sc"></select></div>
+   </div>
+   <div class="card">
+    <div class="fld"><span>Metoda e llogaritjes</span><select id="sm"></select></div>
+    <div class="fld"><span>Ikindia</span><select id="sa"><option value="1">Standarde (Shafi)</option><option value="2">Hanefi</option></select></div>
+    <div class="fld"><span>Rregullim manual</span>
+     <select id="sadj">
+      <option value="-5">-5 min</option><option value="-3">-3 min</option><option value="-2">-2 min</option>
+      <option value="-1">-1 min</option><option value="0">0 (standard)</option><option value="1">+1 min</option>
+      <option value="2">+2 min</option><option value="3">+3 min</option><option value="5">+5 min</option>
+     </select>
+    </div>
+    <div class="fld"><span>Njoftimi para</span><select id="sp"><option value="0">Në kohë</option><option value="5">5 min para</option><option value="10">10 min para</option></select></div>
+    <div class="fld"><span>Tingulli (Bip)</span><select id="ss"><option value="1">Aktiv</option><option value="0">Joaktiv</option></select></div>
+    <div class="fld"><span>Pamja</span><select id="st"><option value="">Automatike</option><option value="light">E çelët</option><option value="dark">E errët</option></select></div>
+   </div>
+ </div>
+ <div class="btns">
+   <button class="btn" id="perm">Lejo njoftimet</button>
+   <button class="btn sec" id="test">Provo njoftimin</button>
+   <button class="btn" id="ezanBtn" style="background:#eab308; color:#000 !important; border:none;">🎵 Aktivizo Ezanin</button>
+ </div>
+</section>
+
+</main>
+
+<nav aria-label="Navigimi kryesor">
+ <button class="on" data-v="0"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Sot</button>
+ <button data-v="1"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Takvimi</button>
+ <button data-v="2"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Kibla</button>
+ <button data-v="3"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="19" cy="10" r="2"/><circle cx="16.5" cy="18" r="2"/><circle cx="7.5" cy="18" r="2"/><circle cx="5" cy="10" r="2"/></svg>Tasbihu</button>
+ <button data-v="4"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Cilësimet</button>
+</nav>
+<div id="toast" role="status"></div>
+
+</div><!-- /app -->
+<script src="script.js"></script>
+</body>
+</html>
