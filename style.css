@@ -33,7 +33,7 @@ header { display: flex; align-items: center; justify-content: space-between; pad
 .logo { display: flex; align-items: center; gap: 10px; font: 700 20px Fraunces, Georgia, serif; color: var(--pri); }
 .logo img { border-radius: 8px; }
 .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.loc { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 8px 16px; font-weight: 600; font-size: 14px; color: var(--tx); transition: all 0.2s; }
+.loc { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 8px 16px; font-weight: 600; font-size: 14px; color: var(--tx); transition: all 0.2s; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .loc:hover { border-color: var(--pri); }
 .btn-install { background: var(--pri); color: #fff !important; border-radius: 20px; padding: 8px 16px; font-weight: 600; font-size: 13px; transition: all 0.2s; }
 .btn-install:hover { background: var(--pri-hover); transform: translateY(-1px); }
@@ -55,7 +55,7 @@ body:not(:has(#v0.on)) header { margin-bottom: 20px; }
 /* ============ HERO ============ */
 .hero { position: relative; border-radius: 16px; color: #fff; background: var(--pri); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px -10px rgba(10,58,42,0.5); overflow: hidden; height: 100%; display: flex; flex-direction: column; }
 .hero::before { content: ""; position: absolute; inset: 0; opacity: 0.05; background-image: radial-gradient(circle at 50% 50%, #fff 1px, transparent 1px); background-size: 20px 20px; }
-.hc { position: relative; z-index: 1; padding: 40px 30px; display: flex; flex-direction: column; flex: 1; justify-content: center; }
+.hc { position: relative; z-index: 1; padding: 40px 20px; display: flex; flex-direction: column; flex: 1; justify-content: center; }
 .kicker-white { font-size: 12px; font-weight: 700; color: var(--gold); letter-spacing: 1.5px; margin-bottom: 8px; }
 .hero-title { font: 500 36px Fraunces, Georgia, serif; display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
 .hero-title .moon { color: var(--gold); font-size: 28px; }
@@ -67,15 +67,9 @@ body:not(:has(#v0.on)) header { margin-bottom: 20px; }
 .ringbox .fg { stroke: #fff; stroke-linecap: round; stroke-dasharray: 640; transition: stroke-dashoffset 1s linear; }
 .ringin { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .ringin small { font-size: 12px; font-weight: 600; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; }
-.cd { 
-  font: 500 72px/1 Fraunces, Georgia, serif; font-variant-numeric: tabular-nums; margin: 10px 0; letter-spacing: -2px; 
-  animation: pulseNum 2.5s infinite alternate; /* Animacioni i ri */
-}
-@keyframes pulseNum {
-  0% { text-shadow: 0 0 10px rgba(255,255,255,0); }
-  100% { text-shadow: 0 0 20px rgba(255,255,255,0.2); }
-}
-.rmz { display: flex; justify-content: center; gap: 10px; margin-top: 20px; font-size: 14px; }
+.cd { font: 500 72px/1 Fraunces, Georgia, serif; font-variant-numeric: tabular-nums; margin: 10px 0; letter-spacing: -2px; animation: pulseNum 2.5s infinite alternate; }
+@keyframes pulseNum { 0% { text-shadow: 0 0 10px rgba(255,255,255,0); } 100% { text-shadow: 0 0 20px rgba(255,255,255,0.2); } }
+.rmz { display: flex; justify-content: center; gap: 10px; margin-top: 20px; font-size: 14px; flex-wrap: wrap; }
 
 /* ============ LISTA & PROGRESI ============ */
 .side-col { display: flex; flex-direction: column; gap: 20px; }
@@ -119,15 +113,19 @@ h2 { font: 700 26px Fraunces, Georgia, serif; margin: 10px 0 20px; color: var(--
 .btn.sec { background: var(--card); color: var(--pri) !important; border: 1px solid var(--line); }
 .btn.sec:hover { border-color: var(--pri); }
 
-/* CILËSIMET */
+/* ============ CILËSIMET (RREGULLIMI KRYESOR) ============ */
 .settings-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-.fld { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); color: var(--tx); }
+.fld { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); color: var(--tx); flex-wrap: wrap; }
 .fld:last-child { border: 0; }
-select, input[type="search"] { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; max-width: 60%; min-width: 0; color: var(--tx); font-weight: 600; transition: all 0.2s; }
-input[type="search"] { width: 60%; }
+.fld span { flex: 1 1 100%; font-weight: 500; margin-bottom: 6px; } /* Teksti zë gjithë gjerësinë në mobile */
+select, input[type="search"] { 
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; 
+  width: 100%; /* Zë 100% të gjerësisë në mobile */
+  min-width: 0; color: var(--tx); font-weight: 600; transition: all 0.2s; 
+}
 select:focus, input:focus { border-color: var(--pri); outline: none; background: var(--card); }
 
-/* TAKVIMI */
+/* ============ TAKVIMI ============ */
 .tw { overflow-x: auto; border-radius: 16px; border: 1px solid var(--line); background: var(--card); margin-top: 16px; box-shadow: 0 4px 20px -10px rgba(0,0,0,0.05); }
 table { border-collapse: collapse; width: 100%; min-width: 520px; font-variant-numeric: tabular-nums; font-size: 14px; }
 th, td { padding: 14px 16px; text-align: center; border-bottom: 1px solid var(--line); color: var(--tx); }
@@ -140,14 +138,14 @@ tr:hover td { background: var(--bg); }
 .mnav button:hover { border-color: var(--pri); color: var(--pri); }
 .mnav b { font: 700 20px Fraunces, Georgia, serif; }
 
-/* KIBLA */
+/* ============ KIBLA ============ */
 .cmp { position: relative; width: min(80vw, 340px); margin: 30px auto 16px; }
 .cmp:before { content: ""; position: absolute; top: -20px; left: 50%; margin-left: -10px; border: 10px solid transparent; border-bottom: 0; border-top: 16px solid var(--pri); }
 #dial { transition: transform 0.25s; }
 .ok #dial circle.r { stroke: var(--pri); stroke-width: 6; }
 .big { font: 700 52px Fraunces, Georgia, serif; text-align: center; color: var(--tx); }
 
-/* TASBIHU */
+/* ============ TASBIHU ============ */
 .chips { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 16px 0; }
 .chip { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--line); background: var(--card); font-weight: 600; font-size: 14px; color: var(--tx); transition: all 0.2s; }
 .chip:hover { border-color: var(--pri); }
@@ -165,7 +163,7 @@ tr:hover td { background: var(--bg); }
 #tap b { font: 700 64px/1 Fraunces, Georgia, serif; font-variant-numeric: tabular-nums; }
 #tap small { opacity: 0.9; margin-top: 6px; font-size: 14px; }
 
-/* NAV */
+/* ============ NAV ============ */
 nav { position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px; width: min(500px, calc(100% - 32px)); display: flex; gap: 4px; padding: 8px; border-radius: 20px; background: color-mix(in srgb, var(--card) 85%, transparent); backdrop-filter: blur(20px); border: 1px solid var(--line); box-shadow: 0 12px 30px -10px rgba(0,0,0,0.2); z-index: 10; }
 nav button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; border-radius: 12px; font-size: 12px; font-weight: 600; color: var(--mut); transition: all 0.2s; }
 nav svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; }
@@ -177,6 +175,12 @@ nav button.on { color: var(--pri); background: var(--hl); }
 /* ============ DESKTOP DHE MOBILE ============ */
 @media(min-width: 900px) {
   .settings-grid { grid-template-columns: 1fr 1fr; }
+  
+  /* Kthejmë rregullat e Cilësimeve në rresht për Desktop */
+  .fld { flex-wrap: nowrap; }
+  .fld span { flex: none; margin-bottom: 0; }
+  select, input[type="search"] { width: auto; max-width: 60%; }
+
   #v0.on { display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; align-items: stretch; }
   #v0 .side-col { height: 100%; }
 }
