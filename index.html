@@ -30,7 +30,7 @@
 
 <div class="page-title-wrap">
   <div class="page-title">
-    <p class="kicker">📍 KOSOVË, PRISHTINË</p>
+    <p class="kicker">📍 Automatikisht në Lokacionin Tuaj!</p>
     <h1>Kohët e namazit</h1>
   </div>
   <div class="page-date">
@@ -56,7 +56,6 @@
     </div>
    </div>
    
-   <!-- Butoni i Ndalimit të Ezanit -->
    <div class="cen" style="margin-top: 20px; position: relative; z-index: 10;">
      <button class="btn" id="stopEzanHero" style="display: none; background: #ef4444; color: #fff !important; border-radius: 30px; padding: 12px 30px; font-size: 16px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); border: none;">⏹ Ndal Ezanin</button>
    </div>
@@ -69,7 +68,6 @@
    <div id="list" class="list"></div>
    <div class="card prog" id="prog"></div>
    
-   <!-- Karta e Ajetit të Ditës (E RE) -->
    <div class="card" style="text-align: center; background: var(--hl); border-color: var(--pri);">
      <p class="mut" style="color: var(--pri); font-weight: 700; margin-bottom: 10px; letter-spacing: 1px;">AJETI I DITËS</p>
      <p style="font-family: 'Amiri', serif; font-size: 26px; line-height: 1.8; direction: rtl;">إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا</p>
@@ -144,8 +142,18 @@
     <div class="fld"><span>Pamja</span><select id="st"><option value="">Automatike</option><option value="light">E çelët</option><option value="dark">E errët</option></select></div>
    </div>
  </div>
- <div class="btns">
-   <button class="btn" id="perm">Lejo njoftimet</button>
+ 
+ <div class="btns" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-top: 25px;">
+   
+   <!-- Switch-i i bukur per Njoftimet -->
+   <div style="display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); padding: 8px 16px; border-radius: 30px;">
+     <span style="font-weight: 600; font-size: 14px;">Njoftimet</span>
+     <label class="switch">
+       <input type="checkbox" id="notifSwitch">
+       <span class="slider"></span>
+     </label>
+   </div>
+
    <button class="btn sec" id="test">Provo njoftimin</button>
    <button class="btn" id="ezanBtn" style="background:#eab308; color:#000 !important; border:none;">🎵 Aktivizo Ezanin</button>
  </div>

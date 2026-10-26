@@ -38,7 +38,6 @@ header { display: flex; align-items: center; justify-content: space-between; pad
 .btn-install { background: var(--pri); color: #fff !important; border-radius: 20px; padding: 8px 16px; font-weight: 600; font-size: 13px; transition: all 0.2s; }
 .btn-install:hover { background: var(--pri-hover); transform: translateY(-1px); }
 
-/* Fshehim titullin e faqes kur jemi në faqe të tjera përveç "Sot" */
 body:not(:has(#v0.on)) .page-title-wrap { display: none; }
 body:not(:has(#v0.on)) header { margin-bottom: 20px; }
 
@@ -113,15 +112,52 @@ h2 { font: 700 26px Fraunces, Georgia, serif; margin: 10px 0 20px; color: var(--
 .btn.sec { background: var(--card); color: var(--pri) !important; border: 1px solid var(--line); }
 .btn.sec:hover { border-color: var(--pri); }
 
-/* ============ CILËSIMET (RREGULLIMI KRYESOR) ============ */
+/* ============ SWITCH (NJOFTIMET) ============ */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--line);
+  transition: .4s;
+  border-radius: 24px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: var(--pri);
+}
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* ============ CILËSIMET ============ */
 .settings-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
 .fld { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); color: var(--tx); flex-wrap: wrap; }
 .fld:last-child { border: 0; }
-.fld span { flex: 1 1 100%; font-weight: 500; margin-bottom: 6px; } /* Teksti zë gjithë gjerësinë në mobile */
+.fld span { flex: 1 1 100%; font-weight: 500; margin-bottom: 6px; }
 select, input[type="search"] { 
   background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; 
-  width: 100%; /* Zë 100% të gjerësisë në mobile */
-  min-width: 0; color: var(--tx); font-weight: 600; transition: all 0.2s; 
+  width: 100%; min-width: 0; color: var(--tx); font-weight: 600; transition: all 0.2s; 
 }
 select:focus, input:focus { border-color: var(--pri); outline: none; background: var(--card); }
 
@@ -175,12 +211,9 @@ nav button.on { color: var(--pri); background: var(--hl); }
 /* ============ DESKTOP DHE MOBILE ============ */
 @media(min-width: 900px) {
   .settings-grid { grid-template-columns: 1fr 1fr; }
-  
-  /* Kthejmë rregullat e Cilësimeve në rresht për Desktop */
   .fld { flex-wrap: nowrap; }
   .fld span { flex: none; margin-bottom: 0; }
   select, input[type="search"] { width: auto; max-width: 60%; }
-
   #v0.on { display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; align-items: stretch; }
   #v0 .side-col { height: 100%; }
 }
