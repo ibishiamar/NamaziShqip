@@ -52,26 +52,18 @@ if (!okTz(S.tz)) S.tz = devTz();
 async function fetchAccurateTimes(lat, lng, tz, method) {
   const methodMap = { mwl: 3, isna: 2, egypt: 5, karachi: 1, umm: 4, turkey: 13 };
   const m = methodMap[method] || 3;
-  
-  // DETYROJMË SHKOLLËN HANEFI (2)
-  const school = 2; 
-  
+  const school = 2; // DETYROJMË HANEFI
   const date = new Date();
   const d = `${date.getDate()}-${date.getMonth()+1}-${date.getFullYear()}`;
-  
   const url = `https://api.aladhan.com/v1/timings/${d}?latitude=${lat}&longitude=${lng}&method=${m}&school=${school}&timezonestring=${tz}`;
-  
   try {
     const res = await fetch(url);
     const data = await res.json();
     if (data.code === 200) {
       return {
-        fajr: data.data.timings.Fajr,
-        sunrise: data.data.timings.Sunrise,
-        dhuhr: data.data.timings.Dhuhr,
-        asr: data.data.timings.Asr,
-        maghrib: data.data.timings.Maghrib,
-        isha: data.data.timings.Isha
+        fajr: data.data.timings.Fajr, sunrise: data.data.timings.Sunrise,
+        dhuhr: data.data.timings.Dhuhr, asr: data.data.timings.Asr,
+        maghrib: data.data.timings.Maghrib, isha: data.data.timings.Isha
       };
     }
   } catch(e) { console.log("Gabim API, përdorim llogaritje lokale."); }
@@ -90,17 +82,13 @@ let apiTimes = null;
 
 async function updateTimesFromAPI() {
   if (!S.lat || !S.lng || !S.tz) return;
-  
   const times = await fetchAccurateTimes(S.lat, S.lng, S.tz, S.method);
   if (times) {
     const today = new Date();
     apiTimes = {
-      fajr: parseApiTime(times.fajr, today),
-      sunrise: parseApiTime(times.sunrise, today),
-      dhuhr: parseApiTime(times.dhuhr, today),
-      asr: parseApiTime(times.asr, today),
-      maghrib: parseApiTime(times.maghrib, today),
-      isha: parseApiTime(times.isha, today)
+      fajr: parseApiTime(times.fajr, today), sunrise: parseApiTime(times.sunrise, today),
+      dhuhr: parseApiTime(times.dhuhr, today), asr: parseApiTime(times.asr, today),
+      maghrib: parseApiTime(times.maghrib, today), isha: parseApiTime(times.isha, today)
     };
     render();
   }
@@ -210,12 +198,6 @@ function stopEzan() {
   }
   const btnHero = $("#stopEzanHero");
   if (btnHero) btnHero.style.display = "none";
-  
-  const btnMain = $("#ezanBtn");
-  if (btnMain && !window.ezanEnabled) {
-    btnMain.textContent = "🎵 Aktivizo Ezanin";
-    btnMain.style.background = "#eab308";
-  }
 }
 
 function alertUser(k){
@@ -227,7 +209,6 @@ function alertUser(k){
   if (S.ezanEnabled) {
     const btnHero = $("#stopEzanHero");
     if (btnHero) btnHero.style.display = "none";
-
     ezanAudio.play().then(() => {
       if (btnHero) btnHero.style.display = "inline-block";
     }).catch(e => console.log("Ezan nuk u luajt: ", e));
@@ -274,19 +255,14 @@ function drawQ() {
   $("#dial").style.transform = "rotate(" + (head == null ? 0 : -head) + "deg)";
   let diff = Math.abs(((QB - head + 540) % 360) - 180);
   const ok = head != null && diff < 5;
-  
   $("#cmp").classList.toggle("ok", ok);
   $("#qs").textContent = head == null ? "Busulla nuk është aktive." : (ok ? "Je në drejtim të Kibles." : "Kthe telefonin derisa shigjeta të jetë lart.");
 }
 
 function onOri(e) {
   let h = null;
-  if (e.webkitCompassHeading != null) {
-    h = e.webkitCompassHeading;
-  } 
-  else if (e.alpha != null) {
-    h = e.absolute ? e.alpha : (360 - e.alpha);
-  }
+  if (e.webkitCompassHeading != null) h = e.webkitCompassHeading;
+  else if (e.alpha != null) h = e.absolute ? e.alpha : (360 - e.alpha);
   if (h == null) return;
   head = h;
   drawQ();
@@ -358,7 +334,6 @@ function fillSettings() {
     }
   }
 
-  // Menaxhimi i Switch-it te Njoftimet
   const notifSwitch = $("#notifSwitch");
   if(notifSwitch) {
     const anyOn = Object.values(S.notify).some(v => v === 1);
@@ -395,7 +370,6 @@ $("#ss").onchange = e => { S.sound=+e.target.value; save(); beep(); };
 $("#st").onchange = e => { S.theme=e.target.value; save(); theme(); };
 if($("#sadj"))$("#sadj").onchange = e => { S.adj=+e.target.value; save(); render(); };
 
-// Eventi për Switch-in e Njoftimeve
 const notifSwitch = $("#notifSwitch");
 if(notifSwitch) {
   notifSwitch.onchange = async (e) => {
@@ -418,8 +392,85 @@ if(notifSwitch) {
 
 $("#test").onclick = () => { askPerm().then(()=>{const b="Ky është një njoftim prove."; toast(b); beep(); notify("NamaziShqip",b,"nsq-test");}); };
 
-// Kërko GPS automatikisht kur të hapet app-i
-$("#geo").onclick = () => { if(!navigator.geolocation)return toast("GPS nuk mbështetet"); navigator.geolocation.getCurrentPosition(p=>{ S.city="custom"; S.lat=p.coords.latitude; S.lng=p.coords.longitude; S.tz=devTz(); S.label="Vendndodhja ime"; fired={}; mo=null; save(); fillSettings(); updateTimesFromAPI(); render(); toast("Vendndodhja u përditësua automatikisht."); },()=>toast("Nuk u mor vendndodhja."),{timeout:10000,enableHighAccuracy:true}); };
+/* ========================================================
+   FUNKSIONET E LOKACIONIT (Rregulluar për Safari/iOS)
+   ======================================================== */
+async function updateLocation() {
+  if(!navigator.geolocation) return toast("GPS nuk mbështetet në këtë pajisje.");
+  
+  navigator.geolocation.getCurrentPosition(
+    async p => {
+      S.city = "custom";
+      S.lat = p.coords.latitude;
+      S.lng = p.coords.longitude;
+      S.tz = devTz();
+      S.label = "Vendndodhja ime";
+      fired = {}; mo = null;
+      
+      // Përditësojmë pamjen me të dhënat fillestare
+      save(); fillSettings(); updateTimesFromAPI(); render();
+      
+      const row = $("#locPermissionRow");
+      if (row) row.style.display = "none";
+
+      // KËRKOJMË REVERSE GEOCODING PËR TË MARRË QYTETIN DHE SHTETIN
+      try {
+        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${S.lat}&longitude=${S.lng}&localityLanguage=sq`);
+        const data = await res.json();
+        
+        // Nëse API kthen një qytet, e përdorim atë
+        const cityName = data.city || data.locality || data.principalSubdivision;
+        const countryCode = data.countryCode; // p.sh. XK, RS, AL
+        
+        if (cityName) {
+          S.label = cityName;
+          $("#q").value = cityName; // Shfaq qytetin te "Kërko qytetin"
+        }
+        
+        if (countryCode) {
+          CC = countryCode;
+          $("#sco").value = CC; // Shfaq shtetin te "Shteti"
+        }
+        
+        save(); fillSettings(); updateTimesFromAPI(); render();
+        toast("Vendndodhja u përditësua: " + S.label);
+      } catch (e) {
+        console.log("Gabim gjatë marrjes së qytetit:", e);
+        toast("Vendndodhja u përditësua.");
+      }
+    },
+    err => {
+      toast("Nuk u mor vendndodhja. Lejo lokacionin te cilësimet e telefonit.");
+      console.log(err);
+    },
+    { timeout: 10000, enableHighAccuracy: true }
+  );
+}
+
+$("#geo").onclick = updateLocation;
+
+if ($("#requestLocPerm")) {
+  $("#requestLocPerm").onclick = () => {
+    updateLocation();
+  };
+}
+
+// Kontrollo statusin e lejes për lokacion (pa e detyruar)
+if (navigator.permissions) {
+  navigator.permissions.query({ name: 'geolocation' }).then(result => {
+    const row = $("#locPermissionRow");
+    if (result.state === 'granted') {
+      if (row) row.style.display = "none";
+      updateLocation();
+    } else {
+      if (row) row.style.display = "flex";
+    }
+  }).catch(() => {
+    if ($("#locPermissionRow")) $("#locPermissionRow").style.display = "flex";
+  });
+} else {
+  if ($("#locPermissionRow")) $("#locPermissionRow").style.display = "flex";
+}
 
 $("#ezanBtn").onclick = () => {
   if (!S.ezanEnabled) {
@@ -461,24 +512,7 @@ tsb();
 render(); 
 setInterval(tick, 1000);
 
-// Nëse ekziston lokacioni, përditëso kohët me API, përndryshe kërko GPS
+// Nëse ekziston lokacioni, përditëso kohët me API
 if (S.lat && S.lng) {
   updateTimesFromAPI();
-} else {
-  if ($("#geo")) $("#geo").click();
-}
-
-// Thirr GPS automatikisht në hapjen e parë
-if (FIRST && navigator.geolocation) {
-  navigator.geolocation.getCurrentPosition(p => {
-    S.city = "custom";
-    S.lat = p.coords.latitude;
-    S.lng = p.coords.longitude;
-    S.tz = devTz();
-    S.label = "Vendndodhja ime";
-    save();
-    fillSettings();
-    updateTimesFromAPI();
-    render();
-  }, () => {}, {timeout: 10000, enableHighAccuracy: true});
 }
