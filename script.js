@@ -8,16 +8,25 @@ const vib = p => { try { navigator.vibrate && navigator.vibrate(p); } catch(e){}
 const CHK  = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 
 const CITIES = [
-  ["Prishtinë",42.6629,21.1655,"Europe/Belgrade"], ["Tiranë",41.3275,19.8187,"Europe/Tirane"],
-  ["Shkup",41.9981,21.4254,"Europe/Skopje"], ["Prizren",42.2139,20.7397,"Europe/Belgrade"],
-  ["Pejë",42.6593,20.2887,"Europe/Belgrade"], ["Gjakovë",42.3803,20.4308,"Europe/Belgrade"],
-  ["Mitrovicë",42.8914,20.866,"Europe/Belgrade"], ["Ferizaj",42.3702,21.1483,"Europe/Belgrade"],
-  ["Gjilan",42.4635,21.4694,"Europe/Belgrade"], ["Preshevë",42.3086,21.6489,"Europe/Belgrade"],
-  ["Bujanoc",42.4606,21.7678,"Europe/Belgrade"], ["Tetovë",42.0069,20.9715,"Europe/Skopje"],
-  ["Durrës",41.3246,19.4565,"Europe/Tirane"], ["Shkodër",42.0693,19.5126,"Europe/Tirane"],
-  ["Elbasan",41.1125,20.0822,"Europe/Tirane"], ["Vlorë",40.466,19.4914,"Europe/Tirane"],
-  ["Ulqin",41.9294,19.2094,"Europe/Podgorica"], ["Zürich",47.3769,8.5417,"Europe/Zurich"],
-  ["Mynih",48.1351,11.582,"Europe/Berlin"]
+  { name:"Prishtinë", lat:42.6629, lng:21.1655, tz:"Europe/Belgrade" },
+  { name:"Tiranë", lat:41.3275, lng:19.8187, tz:"Europe/Tirane" },
+  { name:"Shkup", lat:41.9981, lng:21.4254, tz:"Europe/Skopje" },
+  { name:"Prizren", lat:42.2139, lng:20.7397, tz:"Europe/Belgrade" },
+  { name:"Pejë", lat:42.6593, lng:20.2887, tz:"Europe/Belgrade" },
+  { name:"Gjakovë", lat:42.3803, lng:20.4308, tz:"Europe/Belgrade" },
+  { name:"Mitrovicë", lat:42.8914, lng:20.866, tz:"Europe/Belgrade" },
+  { name:"Ferizaj", lat:42.3702, lng:21.1483, tz:"Europe/Belgrade" },
+  { name:"Gjilan", lat:42.4635, lng:21.4694, tz:"Europe/Belgrade" },
+  { name:"Preshevë", lat:42.3086, lng:21.6489, tz:"Europe/Belgrade" },
+  { name:"Bujanoc", lat:42.4606, lng:21.7678, tz:"Europe/Belgrade" },
+  { name:"Tetovë", lat:42.0069, lng:20.9715, tz:"Europe/Skopje" },
+  { name:"Durrës", lat:41.3246, lng:19.4565, tz:"Europe/Tirane" },
+  { name:"Shkodër", lat:42.0693, lng:19.5126, tz:"Europe/Tirane" },
+  { name:"Elbasan", lat:41.1125, lng:20.0822, tz:"Europe/Tirane" },
+  { name:"Vlorë", lat:40.466, lng:19.4914, tz:"Europe/Tirane" },
+  { name:"Ulqin", lat:41.9294, lng:19.2094, tz:"Europe/Podgorica" },
+  { name:"Zürich", lat:47.3769, lng:8.5417, tz:"Europe/Zurich" },
+  { name:"Mynih", lat:48.1351, lng:11.582, tz:"Europe/Berlin" }
 ];
 
 const NAMES = [
@@ -39,14 +48,12 @@ const TG = [33,99,100,0];
 const SAFETY = { fajr: 1, sunrise: 0, dhuhr: 1, asr: 1, maghrib: 1, isha: 1 };
 
 const devTz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch(e) { return "UTC"; } };
-// asr: 1 = Shafi, 2 = Hanefi (parazgjedhja)
-let S = { city:0, lat:42.6629, lng:21.1655, tz:"Europe/Belgrade", label:"Prishtinë", gps:false, method:"mwl", asr:2, asrV:2, pre:0, sound:1, theme:"", adj:0, notify:{fajr:1,dhuhr:1,asr:1,maghrib:1,isha:1}, done:{}, ts:{n:0,t:33,d:0,total:0}, ezanEnabled:false };
+let S = { city:0, lat:42.6629, lng:21.1655, tz:"Europe/Belgrade", label:"Prishtinë", gps:false, method:"turkey", asr:2, pre:0, sound:1, theme:"", adj:0, notify:{fajr:1,dhuhr:1,asr:1,maghrib:1,isha:1}, done:{}, ts:{n:0,t:33,d:0,total:0}, ezanEnabled:false };
 let FIRST = true;
 try { const raw = localStorage.getItem("nsq"); if (raw) { FIRST = false; Object.assign(S, JSON.parse(raw)); } } catch(e){}
 const save = () => { try { localStorage.setItem("nsq", JSON.stringify(S)); } catch(e){} };
 const okTz = z => { try { new Intl.DateTimeFormat("en", {timeZone: z}); return true; } catch(e) { return false; } };
 if (!okTz(S.tz)) S.tz = devTz();
-if (S.asrV !== 2) { S.asr = 2; S.asrV = 2; save(); } // një herë: Hanefi si parazgjedhje
 
 /* ========================================================
    LLOGARITJET ASTRONOMIKE LOKALE (Fallback)
@@ -80,7 +87,7 @@ function times(y,m,d) {
 }
 
 /* ========================================================
-   KOHËT E SAKTA NGA ALADHAN API (dita + kalendari mujor)
+   ALADHAN API (me metodën Diyanet dhe rregullime)
    ======================================================== */
 const METHOD_MAP = { mwl: 3, isna: 2, egypt: 5, karachi: 1, umm: 4, turkey: 13 };
 const apiC = {}, apiPend = {}, apiTried = {};
@@ -89,7 +96,6 @@ const cfgK = () => S.lat+"|"+S.lng+"|"+S.method+"|"+S.asr+"|"+S.tz;
 const dayK = (y,m,d) => y+"-"+m+"-"+d+"|"+cfgK();
 const validT = v => /\d{1,2}:\d{2}/.test(v || "");
 
-// Ora e qytetit (S.tz) -> çast i saktë kohor (+ rregullimi manual)
 function parseApiTime(str, y, m, d) {
   const mt = /(\d{1,2}):(\d{2})/.exec(str || "");
   if (!mt) return null;
@@ -100,8 +106,13 @@ async function loadMonth(y, m) {
   const cfg = cfgK(), key = "M"+y+"-"+m+"|"+cfg;
   if (apiPend[key] || (apiTried[key] && Date.now() - apiTried[key] < 60000)) return;
   apiPend[key] = 1; apiTried[key] = Date.now();
-  const mm = METHOD_MAP[S.method] || 3, school = (+S.asr === 2) ? 1 : 0; // Aladhan: 0 = Shafi, 1 = Hanefi
-  const url = `https://api.aladhan.com/v1/calendar/${y}/${m}?latitude=${S.lat}&longitude=${S.lng}&method=${mm}&school=${school}&timezonestring=${encodeURIComponent(S.tz)}`;
+  const mm = METHOD_MAP[S.method] || 13; // Diyanet si default
+  const school = 1; // Hanefi
+
+  // RREGULLIMI PËR BALLKANIN (Diyanet shpesh kërkon +2 deri +5 minuta)
+  const tune = "0,0,0,3,5,5,0,5"; 
+
+  const url = `https://api.aladhan.com/v1/calendar/${y}/${m}?latitude=${S.lat}&longitude=${S.lng}&method=${mm}&school=${school}&timezonestring=${encodeURIComponent(S.tz)}&tune=${tune}`;
   let ok = false;
   try {
     const res = await fetch(url), j = await res.json();
@@ -114,15 +125,14 @@ async function loadMonth(y, m) {
       });
       ok = true;
     }
-  } catch(e) { console.log("Gabim API, përdorim llogaritje lokale."); }
+  } catch(e) { console.log("Gabim API."); }
   delete apiPend[key];
   if (ok && cfgK() === cfg) {
-    if (y === Y && m === Mo && lastToastCfg !== cfg) { lastToastCfg = cfg; toast("Kohët u sinkronizuan me saktësi maksimale."); }
+    if (y === Y && m === Mo && lastToastCfg !== cfg) { lastToastCfg = cfg; toast("Kohët u sinkronizuan."); }
     render();
   }
 }
 
-// Kohët e një dite: nga API nëse janë ngarkuar, përndryshe llogaritje lokale (dhe kërkohet API)
 function dayTimes(y, m, d) {
   const raw = apiC[dayK(y,m,d)];
   if (raw) {
@@ -318,7 +328,7 @@ const RESC=(()=>{const dn=new Intl.DisplayNames(["sq"],{type:"region"}),skip=["Z
 function theme() { if(S.theme) document.documentElement.setAttribute("data-theme",S.theme); else document.documentElement.removeAttribute("data-theme"); }
 
 function fillSettings() {
-  $("#sc").innerHTML=(S.city=="custom"?`<option value="custom">${esc(S.label)}</option>`:"")+CITIES.map((c,i)=>`<option value="${i}">${c[0]}</option>`).join("");
+  $("#sc").innerHTML=(S.city=="custom"?`<option value="custom">${esc(S.label)}</option>`:"")+CITIES.map((c,i)=>`<option value="${i}">${c.name}</option>`).join("");
   $("#sco").innerHTML='<option value="">Zgjidh shtetin</option>'+RESC.map(c=>`<option value="${c[0]}">${esc(c[1])}</option>`).join("");
   $("#sm").innerHTML=Object.entries(METHODS).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join("");
   $("#sc").value=S.city; $("#sco").value=CC; $("#sm").value=S.method; $("#sa").value=S.asr; $("#sp").value=S.pre; $("#ss").value=S.sound; $("#st").value=S.theme;
@@ -358,7 +368,7 @@ $("#tap").onclick = tap;
 $("#trs").onclick = () => { S.ts.n=0; save(); tsb(); };
 $("#dh").onclick = e => { const b=e.target.closest("[data-d]"); if(b){S.ts.d=+b.dataset.d; S.ts.n=0; save(); tsb();} };
 $("#tg").onclick = e => { const b=e.target.closest("[data-g]"); if(b){S.ts.t=+b.dataset.g; S.ts.n=0; save(); tsb();} };
-$("#sc").onchange = e => { if(e.target.value=="custom")return; const c=CITIES[+e.target.value]; S.city=+e.target.value; S.lat=c[1]; S.lng=c[2]; S.tz=c[3]; S.label=c[0]; S.gps=false; fired={}; mo=null; save(); fillSettings(); updateTimesFromAPI(); };
+$("#sc").onchange = e => { if(e.target.value=="custom")return; const c=CITIES[+e.target.value]; S.city=+e.target.value; S.lat=c.lat; S.lng=c.lng; S.tz=c.tz; S.label=c.name; S.gps=false; fired={}; mo=null; save(); fillSettings(); updateTimesFromAPI(); };
 
 const showRes = () => { $("#res").innerHTML=RES.map((c,i)=>`<button class="rs" data-i="${i}">${esc(c.name)}<span>${esc([c.admin1,c.country].filter(Boolean).join(", "))}</span></button>`).join(""); };
 $("#sco").onchange = async e => {
@@ -437,7 +447,6 @@ function updateLocation() {
 $("#geo").onclick = updateLocation;
 if ($("#requestLocPerm")) $("#requestLocPerm").onclick = updateLocation;
 
-// GPS automatik vetëm nëse përdoruesi e ka zgjedhur GPS-in (ose hapja e parë), që të mos mbishkruhet qyteti i zgjedhur me dorë
 if (navigator.permissions && navigator.permissions.query) {
   navigator.permissions.query({ name: "geolocation" }).then(r => {
     const row = $("#locPermissionRow");
@@ -482,11 +491,9 @@ addEventListener("appinstalled", () => { if($("#inst"))$("#inst").hidden=true; t
 if($("#inst"))$("#inst").onclick = () => { if(!DP)return; DP.prompt(); DP.userChoice.finally(()=>{ DP=null; $("#inst").hidden=true; }); };
 if("serviceWorker" in navigator && /^https?:\//.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(()=>{});
 
-// Kontrollo njoftimin kur hapet aplikacioni pas gjumit / kur kthehet interneti
 document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
 addEventListener("online", () => { for (const k in apiTried) delete apiTried[k]; render(); });
 
-// Zhblloko audion me prekjen e parë pas çdo hapjeje
 const unlockAudio = () => {
   try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); } catch(e) {}
   if (S.ezanEnabled) {
@@ -498,7 +505,6 @@ const unlockAudio = () => {
 };
 addEventListener("pointerdown", unlockAudio, true);
 
-// Ekzekutimi fillestar
 theme(); 
 fillSettings(); 
 tsb(); 

@@ -38,7 +38,7 @@ html { scroll-padding-top: env(safe-area-inset-top, 0px); scroll-behavior: smoot
 body {
   background: var(--bg); color: var(--tx);
   font: 15px/1.5 Figtree, system-ui, sans-serif; min-height: 100vh;
-  -webkit-user-select: none; user-select: none; transition: background-color .3s, color .3s;
+  -webkit-user-select: none; user-select: none;
   position: relative; overflow-x: hidden;
 }
 body::before {
@@ -49,6 +49,10 @@ body::before {
     radial-gradient(45% 45% at 70% 90%, var(--orb3), transparent 70%),
     radial-gradient(35% 35% at 10% 85%, var(--orb1), transparent 70%);
 }
+:root[data-theme="dark"] body::before {
+  background: transparent !important;
+}
+
 input { -webkit-user-select: text; user-select: text; }
 button, select, input { font: inherit; color: inherit; }
 button { cursor: pointer; background: none; border: 0; }
@@ -118,8 +122,7 @@ body:not(:has(#v0.on)) header { margin-bottom: 20px; }
 .ringbox .fg { stroke: #fff; stroke-linecap: round; stroke-dasharray: 640; transition: stroke-dashoffset 1s linear; filter: drop-shadow(0 0 6px rgba(255,255,255,.5)); }
 .ringin { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .ringin small { font-size: 12px; font-weight: 600; color: #fcd68a; letter-spacing: 1px; text-transform: uppercase; }
-.cd { font: 500 72px/1 Fraunces, Georgia, serif; font-variant-numeric: tabular-nums; margin: 10px 0; letter-spacing: -2px; animation: pulseNum 2.5s infinite alternate; }
-@keyframes pulseNum { 0% { text-shadow: 0 0 10px rgba(255,255,255,0); } 100% { text-shadow: 0 0 22px rgba(255,255,255,.25); } }
+.cd { font: 500 72px/1 Fraunces, Georgia, serif; font-variant-numeric: tabular-nums; margin: 10px 0; letter-spacing: -2px; text-shadow: 0 0 20px rgba(255,255,255,.2); }
 .rmz { display: flex; justify-content: center; gap: 10px; margin-top: 20px; font-size: 14px; flex-wrap: wrap; }
 
 /* ============ LISTA & PROGRESI ============ */
@@ -226,10 +229,13 @@ tr:hover td { background: var(--hl); }
 .mnav button:hover { border-color: var(--pri); color: var(--pri); }
 .mnav b { font: 700 20px Fraunces, Georgia, serif; }
 
-/* ============ KIBLA ============ */
-.cmp { position: relative; width: min(80vw, 340px); margin: 30px auto 16px; filter: drop-shadow(0 16px 30px rgba(0,0,0,.25)); }
+/* ============ KIBLA (RREGULLIMI I GLITCH-IT) ============ */
+.cmp { position: relative; width: min(80vw, 340px); margin: 30px auto 16px; filter: none; /* Hoqa filter drop-shadow që shkaktonte artifakte */ }
 .cmp:before { content: ""; position: absolute; top: -20px; left: 50%; margin-left: -10px; border: 10px solid transparent; border-bottom: 0; border-top: 16px solid var(--pri); }
-#dial { transition: transform .25s; }
+#dial { 
+  /* Hoqa transition që shkaktonte vonesë dhe glitch gjatë lëvizjes së shpejtë */
+  transition: none; 
+}
 .ok #dial circle.r { stroke: var(--pri); stroke-width: 6; }
 .big { font: 700 52px Fraunces, Georgia, serif; text-align: center; color: var(--tx); }
 
@@ -284,8 +290,57 @@ nav button.on { color: var(--pri); background: var(--hl); box-shadow: inset 0 0 
 }
 #toast.on { transform: translate(-50%, 0); }
 
+/* ============ RREGULLIME SPECIFIKE PËR DARK MODE (GLITCH FIX) ============ */
+@media(prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) header,
+  :root:not([data-theme="light"]) .list,
+  :root:not([data-theme="light"]) .card,
+  :root:not([data-theme="light"]) .tw,
+  :root:not([data-theme="light"]) .mnav,
+  :root:not([data-theme="light"]) nav {
+    backdrop-filter: blur(12px) saturate(120%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(120%) !important;
+    background: rgba(15, 23, 42, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  :root:not([data-theme="light"]) .hero {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: linear-gradient(160deg, #0f3b2d, #08221a) !important;
+  }
+  :root:not([data-theme="light"]) .cd {
+    text-shadow: none !important;
+  }
+  /* Fshehim gradientët e sfondit në Dark Mode për performancë */
+  :root:not([data-theme="light"]) body::before {
+    background: transparent !important;
+  }
+}
+
+:root[data-theme="dark"] header,
+:root[data-theme="dark"] .list,
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .tw,
+:root[data-theme="dark"] .mnav,
+:root[data-theme="dark"] nav {
+  backdrop-filter: blur(12px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(120%) !important;
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+:root[data-theme="dark"] .hero {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: linear-gradient(160deg, #0f3b2d, #08221a) !important;
+}
+:root[data-theme="dark"] .cd {
+  text-shadow: none !important;
+}
+:root[data-theme="dark"] body::before {
+  background: transparent !important;
+}
+
 /* ============ RESPONSIVE PËR MOBILE & TABLET ============ */
-/* Për tabletë dhe kompjuterë */
 @media(min-width: 900px) {
   .settings-grid { grid-template-columns: 1fr 1fr; }
   .fld { flex-wrap: nowrap; }
@@ -295,7 +350,6 @@ nav button.on { color: var(--pri); background: var(--hl); box-shadow: inset 0 0 
   #v0 .side-col { height: 100%; }
 }
 
-/* Për telefonat (Mobile) */
 @media(max-width: 600px) {
   .app { padding: 0 12px 120px; }
   header { flex-direction: column; align-items: stretch; gap: 10px; padding: 14px; }
@@ -314,13 +368,11 @@ nav button.on { color: var(--pri); background: var(--hl); box-shadow: inset 0 0 
   .btns { flex-direction: column; }
   .btn { width: 100%; }
   
-  /* Përshtatja e tasbihut dhe busullës për ekrane të vogla */
   .tsb { width: min(80vw, 260px); }
   .cmp { width: min(90vw, 300px); }
   #tap b { font-size: 54px; }
 }
 
-/* Për iPhone SE dhe telefonat shumë të vegjël */
 @media(max-width: 380px) {
   .page-title h1 { font-size: 32px; }
   .cd { font-size: 48px; }
@@ -335,7 +387,6 @@ nav button.on { color: var(--pri); background: var(--hl); box-shadow: inset 0 0 
   *, *:before, *:after { animation: none !important; transition: none !important; }
 }
 
-/* nëse shfletuesi s'mbështet blur, xhami bëhet më i dendur */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :root { --glass: rgba(255,255,255,.92); --glass-strong: rgba(255,255,255,.96); }
 }
